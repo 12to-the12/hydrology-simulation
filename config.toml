@@ -1,0 +1,11 @@
+
+width=200
+height=200
+noise_detail =  9 # brownian motion # of octaves
+[dimensions]
+# scene is assumed to be 1x1x1 by default
+
+[physics]
+gravity=9.8 # meters/second
+[sunlight]
+# up is North

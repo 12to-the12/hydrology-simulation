@@ -1,0 +1,12 @@
+numpy
+Pillow
+opensimplex
+# plotly
+# pandas
+# pyglet
+# matplotlib
+# seaborn
+pytest
+mypy
+toml
+types-toml
