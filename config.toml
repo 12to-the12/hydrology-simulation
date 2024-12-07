@@ -1,7 +1,10 @@
 
-width=200
-height=200
-noise_detail =  9 # brownian motion # of octaves
+width=512
+height=512
+noise_detail =  3 # brownian motion # of octaves
+persistence = 2.1
+lacunarity = 2
+seed = 1
 [dimensions]
 # scene is assumed to be 1x1x1 by default
 

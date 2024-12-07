@@ -1,6 +1,7 @@
 import toml
 import numpy as np
 from terrain import Terrain
+from hydrology import erode_terrain
 
 
 
@@ -8,5 +9,9 @@ from terrain import Terrain
 
 if __name__=="__main__":
     terrain = Terrain()
-    terrain.save_heightmap()
+    terrain.save_normalmaps()
+    erode_terrain(terrain)
+    terrain.save_map()
+
+
 

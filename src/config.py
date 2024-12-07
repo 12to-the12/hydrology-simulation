@@ -5,6 +5,7 @@ with open('config.toml', 'r') as f:
 width = config["width"]
 height = config["height"]
 noise_detail = config["noise_detail"]
-
-
+persistence = config["persistence"]
+lacunarity = config["lacunarity"]
+seed = config["seed"]
 

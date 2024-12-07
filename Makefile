@@ -11,7 +11,7 @@ run:
 	.venv/bin/python src/main.py
 
 test:
-	.venv/bin/python -m pytest
+	.venv/bin/python -m pytest ./src/*
 
 lint:
 	.venv/bin/python -m mypy ./src/
