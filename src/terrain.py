@@ -4,15 +4,20 @@ import numpy as np
 import opensimplex # type: ignore
 from random import randint
 import numpy.typing as npt
-
+from soil import Soil
+from time import sleep
 
 class Terrain:
     def __init__(self) -> None:
-        self.write = np.zeros((height,width))
+        self.paths = np.zeros((height,width,3))
+        self.trace = np.zeros((height,width,3))
+        self.base = 0
+        self.zenith = max(width, height)/2
         self.initialize_to_noise()
+        self.soil = Soil(1)
 
     def initialize_to_noise(self):
-        self.heightmap = np.zeros((height,width))
+        self._heightmap = np.zeros((height,width))
         self.initialize_brownian(noise_detail, persistence=persistence,lacunarity=lacunarity,seed=seed)
 
     # persistence is how overwhelming the lower frequencies are. A value of 1 treats high frequencies well
@@ -35,14 +40,16 @@ class Terrain:
             total_amplitude+=amplitude
             frequency*=lacunarity
             amplitude/=persistence
-        self.heightmap/=total_amplitude
+        self._heightmap/=total_amplitude
 
-        base = 0
-        top = 50
-        self.heightmap-=self.heightmap.min()
-        self.heightmap/=self.heightmap.max()
-        self.heightmap*=top
-        self.heightmap+=base
+
+        self._heightmap-=self._heightmap.min()
+        self._heightmap/=self._heightmap.max()
+        self._heightmap*=self.zenith
+        self._heightmap+=self.base
+
+        self.initial_heightmap = self._heightmap.copy()
+
 
         
     def add_noise_pass(self, frequency=1, amplitude=1, seed=None):
@@ -63,9 +70,12 @@ class Terrain:
         arr+=1
         arr/=2
 
-        self.heightmap += arr*amplitude
+        self._heightmap += arr*amplitude
+
+        self.save_heightmap()
+
     def get_random_position(self):
-        y_bound, x_bound = self.heightmap.shape
+        y_bound, x_bound = self._heightmap.shape
         x = randint(0,x_bound-1)
         y = randint(0,y_bound-1)
         return np.array([x,y],dtype=np.int64)
@@ -82,13 +92,13 @@ class Terrain:
         # print(f"{width=},{height=}")
         # print(f"{x%width},{(y-1)%height}")
 
-        left = self.heightmap[y,(x-1)%width]
-        right = self.heightmap[y,(x+1)%width]
+        left = self._heightmap[y,(x-1)%width]
+        right = self._heightmap[y,(x+1)%width]
         # print(x)
         # print((y-1)%height)
-        up = self.heightmap[(y-1)%height,x]
+        up = self._heightmap[(y-1)%height,x]
 
-        down = self.heightmap[(y+1)%height,x]
+        down = self._heightmap[(y+1)%height,x]
 
         # print(f"{left=}")
         # print(f"{right=}")
@@ -107,8 +117,40 @@ class Terrain:
 
         return normal_vector
     # [0] is x, [1] is y
-    def save_write(self):
-        self.save_map(map=self.write,path="write.png")
+    def save_paths(self):
+        self.save_map(map=self.paths,path="paths.png",colorize=False)
+
+    def save_trace(self):
+        self.save_map(map=self.trace,path="trace.png",colorize=False)
+    
+    def save_heightmap(self,path="heightmap.png"):
+            self.save_map(self._heightmap,path=path)
+
+    def save_delta(self,path="delta.png"):
+            delta = self._heightmap-self.initial_heightmap
+            # print(np.max(self._heightmap))
+            # print(np.max(self.initial_heightmap))
+            
+            # print(np.min(self._heightmap))
+            # print(np.min(self.initial_heightmap))
+            
+            # print(f"delta max:\t{np.max(delta):.2f}")
+            # print(f"delta min:\t{np.min(delta):.2f}")
+            # print(f"delta mean:\t{np.mean(delta):.2f}")
+
+            # volume = np.sum(self._heightmap)
+            # print(f"total volume: {volume:.2f}")
+
+            # sleep(3)
+            # quit()
+            # delta-=np.min(delta)
+
+
+            # span = np.max(delta)-np.min(delta)
+            # delta/=span
+            self.save_map(map=delta,path=path,colorize=True)
+
+
     def normal_2D(self, position: np.ndarray) -> np.ndarray:
         normal_vector = self.normal(position)
         assert normal_vector.shape == (3,)
@@ -120,6 +162,7 @@ class Terrain:
     def save_normalmaps(self):
         self.xnormalmap = np.zeros((height,width))
         self.ynormalmap = np.zeros((height,width))
+        self.magnormalmap = np.zeros((height,width))
 
 
         for y in range(height):
@@ -129,72 +172,85 @@ class Terrain:
 
                 self.xnormalmap[y,x] = xval
                 self.ynormalmap[y,x] = yval
+                self.magnormalmap[y,x] = np.linalg.norm(self.normal_2D(np.array([x,y])))
         
-        self.save_map(map=self.xnormalmap,path="x.png")
-        self.save_map(map=self.ynormalmap,path="y.png")
+        self.save_map(map=self.xnormalmap,path="x.png",colorize=True)
+        self.save_map(map=self.ynormalmap,path="y.png",colorize=True)
+        self.save_map(map=self.magnormalmap,path="mag.png",colorize=True)
 
+    def get_height(self, position: npt.NDArray):
+        x = int(position[0])
+        y = int(position[1])
+        return self._heightmap[y,x]
+    
+    def set_height(self,x=0,y=0,value=0):
 
-    def save_map(self, map=None, path="noise.png"):
-            if map is None:
-                # print("map is not None")
-                map=self.heightmap
-                arr = map.copy()
+        self._heightmap[int(y),int(x)] = value
+    
+    
+    def change_height(self,x=0,y=0,value=0):
+        self._heightmap[int(y),int(x)] += value   
 
-                arr/=50
-                arr*=255
-                arr = arr.astype(np.uint8)
-                arr = np.repeat(arr, 3, axis=-1)
-                arr = arr.reshape(height,width,3)
+    def save_map(self, map, path="image.png",colorize=False):
 
-            else:
-                arr = map.copy()
+            arr = map.copy()
+            
+                
+            if colorize: 
+                assert arr.shape[-1] !=3
                 negative_arr = map.copy()
                 arr = arr.clip(min=0)
+                
                 negative_arr*=-1
                 negative_arr = negative_arr.clip(min=0)
 
-                # print(arr.max())
-                # print(arr.min())
-                # arr-=arr.min()
                 arr/=arr.max()
                 negative_arr/=arr.max()
 
+
+
                 arr = arr.reshape(height,width,1)
                 negative_arr =  negative_arr.reshape(height,width,1)
-                # print(f"shape: {arr.shape}")
-                # print(f"shape: {negative_arr.shape}")
-
-
-
-                arr = np.concatenate((arr,negative_arr,negative_arr),axis=2)
-                # print(arr.shape)
+                zeros = np.zeros_like(arr)
+                arr = np.concatenate((negative_arr,zeros,arr),axis=2)
                 arr = arr.reshape(height,width,3)
-                # print(arr.shape)
-                # print(arr.max() )
-                # print(arr.min() )
-                arr*=255
-                arr = arr.astype(np.uint8)
+                if path=="delta.png":
+                    pass
+                    # print(arr.shape)
+                    # print(np.max(arr))
+                    # print(np.min(arr))
+                    # print(np.mean(arr))
+                    # sleep(3)
+
+
+            else:
+                if arr.shape[-1]==1:
+                    arr = np.repeat(arr,3,axis=-1)
+                # std_dev = arr.std()
+                # rng = 1 # standard deviations to show on each side
+
+                
+                # arr+=std_dev*rng
+                start = np.percentile(arr,5)
+                end = np.percentile(arr,95)
+                arr-=start
+                arr/=end
+                arr = np.clip(arr,0,1)
+                
+                
+
+
+            
 
 
 
-                # print("custom map set")
-
-            # print(map)
-            # print("saving")
-            # print(arr.max())
-            # print(arr.min())
-
-            # print(arr.max())
-            # print(arr.min()) 
-            # normalize
-            # arr = arr/arr.max()
-            # convert to black and white image
+            arr*=255
+            arr = arr.astype(np.uint8)
 
             # save out
             from PIL import Image
             im = Image.fromarray(arr)
             im.save(path)
-
 
 
 # def test_terrain():
@@ -204,4 +260,3 @@ class Terrain:
 #     assert normal_2D is 5, f"{normal_2D=}"
 
 
-    
