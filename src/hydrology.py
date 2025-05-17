@@ -2,12 +2,12 @@ from terrain import Terrain
 from random import randint
 import numpy as np
 from time import sleep
-from config import width, height
+from config import width, height, particles
 
 import terrain
 
 
-def erode_terrain(terrain: Terrain, particles=50_000_000, dt=0.1):
+def erode_terrain(terrain: Terrain, particles=particles, dt=0.1):
     # print(terrain.heightmap[terrain.get_random_position()])
     for i in range(particles):
         p = Particle(terrain, dt)
@@ -16,10 +16,12 @@ def erode_terrain(terrain: Terrain, particles=50_000_000, dt=0.1):
         if (i % 5000) == 0:
             print(p)
             terrain.save_heightmap()
+            terrain.save_animation_frame(i / 5_000)
             # terrain.save_heightmap(path=f"maps/map{i/1000}.png")
             terrain.paths *= 0.5
             terrain.save_paths()
             print(f"\n{i}")
+
             # print(f"{p.carrying_capacity}")
             # terrain.trace/=i
             # terrain.trace*=1_000
@@ -34,7 +36,6 @@ def erode_terrain(terrain: Terrain, particles=50_000_000, dt=0.1):
     # terrain.save_trace()
     # terrain.save_heightmap()
     # terrain.save_paths()
-
 
 
 class Particle:
@@ -55,21 +56,22 @@ class Particle:
         self.evaporation_rate = 0.05
         self.deposition_rate = 4
         self.age = 0
-        
+
         self.drop()
 
     def __repr__(self):
-            print(f"direction: {self.direction_of_flow}")
-            print(f"velocity: {self.velocity}")
-            print(f"speed: {self.speed:.2f}")
+        print(f"direction: {self.direction_of_flow}")
+        print(f"velocity: {self.velocity}")
+        print(f"speed: {self.speed:.2f}")
 
-            print(f"position: {self.position}")
-            print(f"interval: {self.dt:.2f}")
-            # print(f"ideal travel: {self.dt*self.speed:.2f}")
-            print(f"volume: {self.volume:.2f}")
-            print(f"volume factor: {(1-self.evaporation_rate)**self.dt:.2f}")
-            print(f"age: {self.age:.2f}")
-            return ""
+        print(f"position: {self.position}")
+        print(f"interval: {self.dt:.2f}")
+        # print(f"ideal travel: {self.dt*self.speed:.2f}")
+        print(f"volume: {self.volume:.2f}")
+        print(f"volume factor: {(1-self.evaporation_rate)**self.dt:.2f}")
+        print(f"age: {self.age:.2f}")
+        return ""
+
     @property
     def mass(self) -> float:
         return self.volume * self.density
@@ -85,7 +87,7 @@ class Particle:
     @property
     def y(self):
         return self.position[1]
-    
+
     @property
     def init_x(self):
         return self.init_position[0]
@@ -99,14 +101,13 @@ class Particle:
     def volume_left(self):
         return self.volume / self.initial_volume
 
-
     def drop(self):
         self.flowing = True
         while self.flowing:
             # print("\n\n.",end="")
             # print(".")
             if self.volume <= 0.01:
-                
+
                 break
 
             # we need to control the velocity to result in a position change of one
@@ -119,22 +120,18 @@ class Particle:
             # normal_2D[1]  = 0
             # self.dt = dt
 
-
             # self.velocity += dt*direction_of_flow/self.mass
             # self.velocity += self.dt * direction_of_flow / self.mass
             # self.velocity += self.direction_of_flow / self.mass
             self.velocity += self.direction_of_flow
 
             # print(self.speed)
-            try:self.dt = 1/self.speed
-            except:self.dt = 1
+            try:
+                self.dt = 1 / self.speed
+            except:
+                self.dt = 1
             # print(self.speed)
             # quit()
-
-            
-
-
-
 
             # print(f"{normal_2D}")
             # print(f"{dt}")
@@ -163,7 +160,7 @@ class Particle:
             self.height = self.terrain.get_height(self.position)
 
             # slow down
-            self.velocity *=0
+            self.velocity *= 0
 
             # a friction of 1 removes all velocity
             # self.velocity *= 1 - (self.dt * self.friction)
@@ -173,33 +170,31 @@ class Particle:
             # evaporate
             # self.volume *= 0.5
             self.age += self.dt
-            self.volume *= (1 - self.evaporation_rate)**self.dt
+            self.volume *= (1 - self.evaporation_rate) ** self.dt
+
     def write(self):
         self.terrain.paths[int(self.y), int(self.x)] = np.array(
-        [self.volume_left * 10, 0, (1 - self.volume_left) * 10]
+            [self.volume_left * 10, 0, (1 - self.volume_left) * 10]
         )
         # self.terrain.trace[int(self.position[1]),int(self.position[0])]+=np.array([self.volume_left*10,0,(1-self.volume_left)*10])
-        
-        self.terrain.trace[int(self.y), int(self.x)] += np.array(
-            [1, 0, 0]
-        )
+
+        self.terrain.trace[int(self.y), int(self.x)] += np.array([1, 0, 0])
         # self.save()
 
     def save(self):
-            self.terrain.save_trace()
-            # self.terrain.save_delta()
-            # self.terrain.save_normalmaps()
-            # self.terrain.save_heightmap()
+        self.terrain.save_trace()
+        # self.terrain.save_delta()
+        # self.terrain.save_normalmaps()
+        # self.terrain.save_heightmap()
+
     def erode(self):
         # pass
         drop = self.init_height - self.height
-        if (drop>0):
-            self.terrain.change_height(x=self.init_x,y=self.init_y,value=-drop/2)
-            self.terrain.change_height(x=self.x,y=self.y,value=drop/2)
-        elif drop<0:
+        if drop > 0:
+            self.terrain.change_height(x=self.init_x, y=self.init_y, value=-drop / 2)
+            self.terrain.change_height(x=self.x, y=self.y, value=drop / 2)
+        elif drop < 0:
             self.flowing = False
-        
-        
 
         self.write()
         # print(".")
@@ -235,6 +230,4 @@ class Particle:
         # self.terrain._heightmap[
         #     int(self.init_position[1]), int(self.init_position[0])
         # ] -= deposited
-        self.terrain.change_height(x=self.x,y=self.y,value=-deposited)
-
-
+        self.terrain.change_height(x=self.x, y=self.y, value=-deposited)

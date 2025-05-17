@@ -1,14 +1,15 @@
 
-# width=512
-# height=512
-width=256
-height=256
+width=128
+height=128
+# width=256
+# height=256
 # width=128
 # height=128
-noise_detail = 5 # brownian # of octaves
+noise_detail = 7 # brownian # of octaves
 persistence = 2.1
 lacunarity = 2
-seed = 1
+seed = 3
+particles=50_000
 [dimensions]
 
 [physics]

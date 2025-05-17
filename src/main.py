@@ -1,12 +1,16 @@
+print("<startup>")
 import toml
 import numpy as np
 from terrain import Terrain
 from hydrology import erode_terrain
+# from benchmarking import benchmark
+# from testingnim import testnim
+
+from timeit import timeit
 
 
 # print(arr)
-
-if __name__ == "__main__":
+def erosion():
     terrain = Terrain()
     terrain.save_normalmaps()
     terrain.save_heightmap()
@@ -24,3 +28,12 @@ if __name__ == "__main__":
 
     erode_terrain(terrain)
     terrain.save_heightmap()
+
+
+def time_erosion():
+    print(timeit(erosion, number=1))
+
+
+if __name__ == "__main__":
+    erosion()
+    # testnim()

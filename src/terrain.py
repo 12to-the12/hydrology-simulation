@@ -118,15 +118,18 @@ class Terrain:
         return normal_vector
     # [0] is x, [1] is y
     def save_paths(self):
-        self.save_map(map=self.paths,path="paths.png",colorize=False)
+        self.save_map(map=self.paths,path="./pictures/paths.png",colorize=False)
 
-    def save_trace(self):
-        self.save_map(map=self.trace,path="trace.png",colorize=False)
+    def save_trace(self,path="./pictures/trace.png"):
+        self.save_map(map=self.trace,path=path,colorize=False)
     
-    def save_heightmap(self,path="heightmap.png"):
+    def save_heightmap(self,path="./pictures/heightmap.png"):
             self.save_map(self._heightmap,path=path)
 
-    def save_delta(self,path="delta.png"):
+    def save_animation_frame(self,number):
+        self.save_heightmap(path=f"./animation/heightmap-animation/{number:.0f}-heightmap.png")
+        self.save_trace(path=f"./animation/trace-animation/{number:.0f}-heightmap.png")
+    def save_delta(self,path="./pictures/delta.png"):
             delta = self._heightmap-self.initial_heightmap
             # print(np.max(self._heightmap))
             # print(np.max(self.initial_heightmap))
@@ -174,9 +177,9 @@ class Terrain:
                 self.ynormalmap[y,x] = yval
                 self.magnormalmap[y,x] = np.linalg.norm(self.normal_2D(np.array([x,y])))
         
-        self.save_map(map=self.xnormalmap,path="x.png",colorize=True)
-        self.save_map(map=self.ynormalmap,path="y.png",colorize=True)
-        self.save_map(map=self.magnormalmap,path="mag.png",colorize=True)
+        self.save_map(map=self.xnormalmap,path="./pictures/x.png",colorize=True)
+        self.save_map(map=self.ynormalmap,path="./pictures/y.png",colorize=True)
+        self.save_map(map=self.magnormalmap,path="./pictures/mag.png",colorize=True)
 
     def get_height(self, position: npt.NDArray):
         x = int(position[0])
@@ -191,7 +194,7 @@ class Terrain:
     def change_height(self,x=0,y=0,value=0):
         self._heightmap[int(y),int(x)] += value   
 
-    def save_map(self, map, path="image.png",colorize=False):
+    def save_map(self, map, path="./pictures/image.png",colorize=False):
 
             arr = map.copy()
             
@@ -214,7 +217,7 @@ class Terrain:
                 zeros = np.zeros_like(arr)
                 arr = np.concatenate((negative_arr,zeros,arr),axis=2)
                 arr = arr.reshape(height,width,3)
-                if path=="delta.png":
+                if path=="./pictures/delta.png":
                     pass
                     # print(arr.shape)
                     # print(np.max(arr))
