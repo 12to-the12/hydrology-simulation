@@ -85,7 +85,7 @@ class Terrain:
 
     # momenutm is computed as a weighted sum of accumulated and existing
     def compute_momentum(self):
-        rate = 0.2 # replacement rate
+        rate = 0.1 # replacement rate
         # tmp = self.momentum.copy()
         self.momentum = (1-rate)*self.momentum + rate*self.momentum_track
         self.momentum_track = np.zeros((height,width,2))
@@ -102,6 +102,8 @@ class Terrain:
         # print(f"{width=},{height=}")
         # print(f"{x%width},{(y-1)%height}")
 
+        center = self._heightmap[y,x]
+
         left = self._heightmap[y,(x-1)%width]
         right = self._heightmap[y,(x+1)%width]
         # print(x)
@@ -115,13 +117,23 @@ class Terrain:
         # print(f"{up=}")
         # print(f"{down=}")
 
-        x_pitch = (left-right)/2
-        y_pitch = (up-down)/2
-        normal_vector = np.array([x_pitch, y_pitch, 1],dtype=np.float64)
-        # normalizes it by dividing by magnitude
+        # old method
+        # x_pitch = (left-right)/2
+        # y_pitch = (up-down)/2
+        # normal_vector = np.array([x_pitch, y_pitch, 1],dtype=np.float64)
+        
+        top_left_face = np.cross([-1,0,left-center],[0,-1,up-center])
+        top_right_face = np.cross([0,-1,up-center],[1,0,right-center])
+        bottom_left_face = np.cross([0,1,down-center],[-1,0,left-center])
+        bottom_right_face = np.cross([1,0,right-center],[0,1,down-center])
+        normal_vector: np.ndarray = (top_left_face/np.linalg.norm(top_left_face)+\
+                                top_right_face/np.linalg.norm(top_right_face)+\
+                                bottom_left_face/np.linalg.norm(bottom_left_face)+\
+                                bottom_right_face/np.linalg.norm(bottom_right_face))
+        
+
+        # # normalizes it by dividing by magnitude
         normal_vector/=np.linalg.norm(normal_vector)
-        # normal_vector = np.array([x_pitch, y_pitch])
-        # print(f"{normal_vector=}")
 
 
 
@@ -176,6 +188,8 @@ class Terrain:
         return normal_2D
     
     def save_normalmaps(self):
+        self.normalmap = np.zeros((height,width,3))
+
         self.xnormalmap = np.zeros((height,width))
         self.ynormalmap = np.zeros((height,width))
         self.magnormalmap = np.zeros((height,width))
@@ -184,12 +198,13 @@ class Terrain:
         for y in range(height):
             for x in range(width):
                 # self.xnormalmap[y,x] = x
-                xval, yval = list(self.normal_2D(np.array([x,y])))
-
+                xval, yval, zval = list(self.normal(np.array([x,y])))
+                self.normalmap[y,x] = [xval,yval,zval]
                 self.xnormalmap[y,x] = xval
                 self.ynormalmap[y,x] = yval
                 self.magnormalmap[y,x] = np.linalg.norm(self.normal_2D(np.array([x,y])))
         
+        self.save_map(map=self.normalmap,path="./pictures/xyz.png")
         self.save_map(map=self.xnormalmap,path="./pictures/x.png",colorize=True)
         self.save_map(map=self.ynormalmap,path="./pictures/y.png",colorize=True)
         self.save_map(map=self.magnormalmap,path="./pictures/mag.png",colorize=True)
@@ -227,8 +242,11 @@ class Terrain:
                 negative_arr*=-1
                 negative_arr = negative_arr.clip(min=0)
 
-                arr/=arr.max()
-                negative_arr/=negative_arr.max()
+                try:arr/=arr.max()
+                except:pass
+
+                try:negative_arr/=negative_arr.max()
+                except:pass
 
 
 

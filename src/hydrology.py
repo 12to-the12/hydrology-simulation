@@ -22,7 +22,7 @@ def erode_terrain(terrain: Terrain, particles=particles, dt=0.1):
             print(f"{batch_size} particles in {elapsed:.2f} s")
             print(p)
             terrain.save_heightmap()
-            terrain.save_momentum()
+            
             # terrain.save_animation_frame(i / 5_000)
             # terrain.save_heightmap(path=f"maps/map{i/1000}.png")
             terrain.paths *= 0.5
@@ -33,6 +33,7 @@ def erode_terrain(terrain: Terrain, particles=particles, dt=0.1):
             # terrain.save_normalmaps()
             terrain.trace *= 0.9
             terrain.compute_momentum()
+            terrain.save_momentum()
     # terrain.trace/=particles
     # terrain.trace*=1_000
     # terrain.save_trace()
@@ -55,7 +56,7 @@ class Particle:
 
         self.density = 1
         self.friction = 1  # 1 for a second is 0
-        self.evaporation_rate = 0.005 #.05
+        self.evaporation_rate = 1e-1 #.05
         self.deposition_rate = 8 # 4
         self.age = 0
         self.steps = 0
@@ -82,6 +83,10 @@ class Particle:
     @property
     def speed(self) -> float:
         return float(np.linalg.norm(self.velocity))
+
+    @property
+    def momentum(self) -> float:
+        return self.volume*self.velocity
 
     @property
     def x(self):
@@ -113,12 +118,25 @@ class Particle:
 
                 break
 
+            
+            # if self.steps > 1000:print(self.steps)
+
             # we need to control the velocity to result in a position change of one
 
             # accelerate on surface
             self.direction_of_flow = self.terrain.normal_2D(
                 self.position
+
+                
             )  # get the surface normal in 3D
+            try:
+                self.dt = 1 / self.speed
+            except:
+                self.dt = 1
+
+            # a friction of 1 removes all velocity
+            self.velocity *= (1-self.friction)**self.dt
+            self.velocity += self.direction_of_flow
             # print(f"\n\nspeed before: {np.linalg.norm(self.velocity)}")
             # normal_2D[1]  = 0
             # self.dt = dt
@@ -126,13 +144,7 @@ class Particle:
             # self.velocity += dt*direction_of_flow/self.mass
             # self.velocity += self.dt * direction_of_flow / self.mass
             # self.velocity += self.direction_of_flow / self.mass
-            self.velocity += self.direction_of_flow
-
-            # print(self.speed)
-            try:
-                self.dt = 1 / self.speed
-            except:
-                self.dt = 1
+            
             # print(self.speed)
             # quit()
 
@@ -142,9 +154,11 @@ class Particle:
 
             # print(f"speed: {np.linalg.norm(self.velocity)}")
             # print(f"position: {self.position}")
-
+            
+          
             # move
             self.init_position = self.position.copy()
+            
             self.position += self.velocity * self.dt
             # print(self.position[0])
 
@@ -152,6 +166,19 @@ class Particle:
                 break
             if not (0 < self.y < height):
                 break
+            self.init_height = self.terrain.get_height(self.init_position)
+            self.height = self.terrain.get_height(self.position)
+            # meters
+            self.Δ_height = self.init_height - self.height
+            # potential_energy = self.mass*self.Δ_height*9.8
+            # kinetic_energy = 0.5*self.mass*self.speed**2
+            # new_kinetic_energy = potential_energy+kinetic_energy
+            # new_speed = new_kinetic_energy*2/self.mass**0.5
+            
+            # self.velocity += self.direction_of_flow*new_speed
+            # if self.velocity.all()==0:self.velocity += self.direction_of_flow
+            # print(self.speed)
+
             # self.position[0] %= width
             # print(self.position[0])
             # print(f"{self.sediment=}")
@@ -159,14 +186,11 @@ class Particle:
             assert 0 <= self.x < width, self.x
             assert 0 <= self.y < height, self.y
 
-            self.init_height = self.terrain.get_height(self.init_position)
-            self.height = self.terrain.get_height(self.position)
+
 
             # slow down
             # self.velocity *= 0
 
-            # a friction of 1 removes all velocity
-            self.velocity *= (1-self.friction)**self.dt
 
             self.erode_dumb()
 
@@ -177,8 +201,7 @@ class Particle:
             self.volume *= (1 - self.evaporation_rate) ** self.dt
 
     def write(self):
-        x_momentum,y_momentum = self.volume*self.direction_of_flow
-
+        x_momentum,y_momentum = self.momentum
         self.terrain.momentum_track[int(self.y), int(self.x)][0] += x_momentum
         self.terrain.momentum_track[int(self.y), int(self.x)][1] += y_momentum
 
@@ -200,12 +223,13 @@ class Particle:
 
     def erode_dumb(self):
         # pass
-        Δ_height = self.init_height - self.height
-        if Δ_height > 0:
-            self.terrain.change_height(x=self.init_x, y=self.init_y, value=-Δ_height / 2)
-            self.terrain.change_height(x=self.x, y=self.y, value=Δ_height / 2)
-        elif Δ_height < 0:
+        
+        if self.Δ_height > 0:
+            self.terrain.change_height(x=self.init_x, y=self.init_y, value=-self.Δ_height / 2)
+            self.terrain.change_height(x=self.x, y=self.y, value=self.Δ_height / 2)
+        elif self.Δ_height < 0:
             self.flowing = False
+        
         else:
             pass
             # self.flowing = False
@@ -217,11 +241,8 @@ class Particle:
     def erode_smart(self):
         # mass transfer
 
-        # meters
-        Δ_height = self.init_height - self.height
-
         # kilograms/meter**3
-        carrying_capacity = self.volume * self.speed * Δ_height
+        carrying_capacity = self.volume * self.speed * self.Δ_height
 
         if carrying_capacity < 0:
             carrying_capacity = 0

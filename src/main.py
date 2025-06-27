@@ -33,6 +33,7 @@ def erosion():
 
     # quit()
 
+    terrain.save_normalmaps()
     print("eroding...")
 
     erode_terrain(terrain)
