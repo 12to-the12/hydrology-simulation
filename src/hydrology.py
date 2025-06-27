@@ -3,7 +3,7 @@ from random import randint
 import numpy as np
 from time import sleep
 from config import width, height, particles
-
+import time
 import terrain
 
 
@@ -13,24 +13,26 @@ def erode_terrain(terrain: Terrain, particles=particles, dt=0.1):
         p = Particle(terrain, dt)
         # print("done")
         # quit()
-        if (i % 5000) == 0:
+        start = time.time()
+        batch_size = 1_000
+        if (i % batch_size) == 0:
+            stamp = time.time()
+            elapsed = stamp - start
+            start = stamp
+            print(f"{batch_size} particles in {elapsed:.2f} s")
             print(p)
             terrain.save_heightmap()
-            terrain.save_animation_frame(i / 5_000)
+            terrain.save_momentum()
+            # terrain.save_animation_frame(i / 5_000)
             # terrain.save_heightmap(path=f"maps/map{i/1000}.png")
             terrain.paths *= 0.5
             terrain.save_paths()
             print(f"\n{i}")
-
-            # print(f"{p.carrying_capacity}")
-            # terrain.trace/=i
-            # terrain.trace*=1_000
             terrain.save_trace()
             terrain.save_delta()
-            terrain.save_normalmaps()
-            # terrain.trace/=1_000
-            # terrain.trace*=i
+            # terrain.save_normalmaps()
             terrain.trace *= 0.9
+            terrain.compute_momentum()
     # terrain.trace/=particles
     # terrain.trace*=1_000
     # terrain.save_trace()
@@ -52,10 +54,11 @@ class Particle:
         self.sediment = 0  # sediment concentration
 
         self.density = 1
-        self.friction = 0.1  # 1 for a second is 0
-        self.evaporation_rate = 0.05
-        self.deposition_rate = 4
+        self.friction = 1  # 1 for a second is 0
+        self.evaporation_rate = 0.005 #.05
+        self.deposition_rate = 8 # 4
         self.age = 0
+        self.steps = 0
 
         self.drop()
 
@@ -69,7 +72,7 @@ class Particle:
         # print(f"ideal travel: {self.dt*self.speed:.2f}")
         print(f"volume: {self.volume:.2f}")
         print(f"volume factor: {(1-self.evaporation_rate)**self.dt:.2f}")
-        print(f"age: {self.age:.2f}")
+        print(f"steps: {self.steps:.2f}")
         return ""
 
     @property
@@ -160,19 +163,27 @@ class Particle:
             self.height = self.terrain.get_height(self.position)
 
             # slow down
-            self.velocity *= 0
+            # self.velocity *= 0
 
             # a friction of 1 removes all velocity
-            # self.velocity *= 1 - (self.dt * self.friction)
+            self.velocity *= (1-self.friction)**self.dt
 
-            self.erode()
+            self.erode_dumb()
 
             # evaporate
             # self.volume *= 0.5
             self.age += self.dt
+            self.steps += 1
             self.volume *= (1 - self.evaporation_rate) ** self.dt
 
     def write(self):
+        x_momentum,y_momentum = self.volume*self.direction_of_flow
+
+        self.terrain.momentum_track[int(self.y), int(self.x)][0] += x_momentum
+        self.terrain.momentum_track[int(self.y), int(self.x)][1] += y_momentum
+
+
+
         self.terrain.paths[int(self.y), int(self.x)] = np.array(
             [self.volume_left * 10, 0, (1 - self.volume_left) * 10]
         )
@@ -187,26 +198,30 @@ class Particle:
         # self.terrain.save_normalmaps()
         # self.terrain.save_heightmap()
 
-    def erode(self):
+    def erode_dumb(self):
         # pass
-        drop = self.init_height - self.height
-        if drop > 0:
-            self.terrain.change_height(x=self.init_x, y=self.init_y, value=-drop / 2)
-            self.terrain.change_height(x=self.x, y=self.y, value=drop / 2)
-        elif drop < 0:
+        Δ_height = self.init_height - self.height
+        if Δ_height > 0:
+            self.terrain.change_height(x=self.init_x, y=self.init_y, value=-Δ_height / 2)
+            self.terrain.change_height(x=self.x, y=self.y, value=Δ_height / 2)
+        elif Δ_height < 0:
             self.flowing = False
+        else:
+            pass
+            # self.flowing = False
+        
 
         self.write()
         # print(".")
 
-    def erode_(self):
+    def erode_smart(self):
         # mass transfer
 
         # meters
-        drop = self.init_height - self.height
+        Δ_height = self.init_height - self.height
 
         # kilograms/meter**3
-        carrying_capacity = self.volume * self.speed * drop
+        carrying_capacity = self.volume * self.speed * Δ_height
 
         if carrying_capacity < 0:
             carrying_capacity = 0
@@ -231,3 +246,5 @@ class Particle:
         #     int(self.init_position[1]), int(self.init_position[0])
         # ] -= deposited
         self.terrain.change_height(x=self.x, y=self.y, value=-deposited)
+
+        self.write()

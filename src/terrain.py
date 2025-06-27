@@ -11,6 +11,9 @@ class Terrain:
     def __init__(self) -> None:
         self.paths = np.zeros((height,width,3))
         self.trace = np.zeros((height,width,3))
+        self.momentum = np.zeros((height,width,2))
+        self.momentum_track = np.zeros((height,width,2))
+
         self.base = 0
         self.zenith = max(width, height)/2
         self.initialize_to_noise()
@@ -80,6 +83,13 @@ class Terrain:
         y = randint(0,y_bound-1)
         return np.array([x,y],dtype=np.int64)
 
+    # momenutm is computed as a weighted sum of accumulated and existing
+    def compute_momentum(self):
+        rate = 0.2 # replacement rate
+        # tmp = self.momentum.copy()
+        self.momentum = (1-rate)*self.momentum + rate*self.momentum_track
+        self.momentum_track = np.zeros((height,width,2))
+
     # returns a 3D array from a point
     # samples the immediately left, right, up, and down heights to find the normal vector
     def normal(self, position: npt.NDArray) -> np.ndarray:
@@ -125,6 +135,9 @@ class Terrain:
     
     def save_heightmap(self,path="./pictures/heightmap.png"):
             self.save_map(self._heightmap,path=path)
+    
+    def save_momentum(self,path="./pictures/momentum.png"):
+            self.save_map(self.momentum,path=path,vector=True)
 
     def save_animation_frame(self,number):
         self.save_heightmap(path=f"./animation/heightmap-animation/{number:.0f}-heightmap.png")
@@ -194,12 +207,19 @@ class Terrain:
     def change_height(self,x=0,y=0,value=0):
         self._heightmap[int(y),int(x)] += value   
 
-    def save_map(self, map, path="./pictures/image.png",colorize=False):
+    def save_map(self, map, path="./pictures/image.png",colorize=False,vector=False):
 
             arr = map.copy()
             
-                
-            if colorize: 
+            if vector:
+                assert arr.shape[-1] ==2
+                x_arr = arr[:,:,0]
+                y_arr = arr[:,:,1]
+                mag = np.sqrt(x_arr**2+y_arr**2)
+                self.save_map(mag,path=path)
+                return None
+
+            elif colorize: 
                 assert arr.shape[-1] !=3
                 negative_arr = map.copy()
                 arr = arr.clip(min=0)
@@ -208,7 +228,7 @@ class Terrain:
                 negative_arr = negative_arr.clip(min=0)
 
                 arr/=arr.max()
-                negative_arr/=arr.max()
+                negative_arr/=negative_arr.max()
 
 
 

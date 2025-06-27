@@ -4,16 +4,25 @@ import numpy as np
 from terrain import Terrain
 from hydrology import erode_terrain
 # from benchmarking import benchmark
-# from testingnim import testnim
 
 from timeit import timeit
-
+import pickle
 
 # print(arr)
 def erosion():
-    terrain = Terrain()
-    terrain.save_normalmaps()
-    terrain.save_heightmap()
+    try:
+        with open('cache/terrain.pkl','rb') as f:
+            terrain = pickle.load(f)  
+        print("cache hit, skipping generation")
+    except:
+        print("cache miss, generating noise map and saving to file...")
+        terrain = Terrain()
+        terrain.save_normalmaps()
+        terrain.save_heightmap()
+        print("terrain generated...")
+        with open('cache/terrain.pkl','wb') as f:
+            pickle.dump(terrain,f)  
+        print("terrain cached to file")
     print(f"min height: {np.min(terrain._heightmap):.2f}")
     print(f"mean height: {np.mean(terrain._heightmap):.2f}")
     print(f"max height: {np.max(terrain._heightmap):.2f}")
@@ -33,6 +42,21 @@ def erosion():
 def time_erosion():
     print(timeit(erosion, number=1))
 
+
+
+def testnim():
+    import nimporter
+    import sim
+    print("testing nim...")
+    
+    tt = sim.Terrain()
+    tt.setNumber(12,2,2)
+    print(tt.getNumber(2,2))
+    print("nim tested!")
+    tt = sim.brownianTerrain(12)
+    sim.printHeightmap(tt)
+
+    
 
 if __name__ == "__main__":
     erosion()

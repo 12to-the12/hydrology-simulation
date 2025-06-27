@@ -8,7 +8,7 @@ install:
 	setup 3.12 uv
 
 run:
-	- rm -r /home/logan/.cache/nim/sim_*/
+	- trash /home/logan/.cache/nim/sim_*/
 	.venv/bin/python src/main.py
 
 test:
@@ -18,7 +18,7 @@ lint:
 	.venv/bin/python -m mypy ./src/
 
 clean:
-	trash {./venv/,./.venv/}
+	- trash {./venv/,./.venv/}
 
 grab:
 	- rm ./remote/*.png
