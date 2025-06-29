@@ -8,6 +8,7 @@ install:
 	setup 3.12 uv
 
 run:
+	- trash ./src/__pycache__
 	- trash /home/logan/.cache/nim/sim_*/
 	.venv/bin/python src/main.py
 
