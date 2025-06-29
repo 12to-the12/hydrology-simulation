@@ -197,6 +197,7 @@ class Terrain:
 
         for y in range(height):
             for x in range(width):
+                # print(f"{x=}, {y=}")
                 # self.xnormalmap[y,x] = x
                 xval, yval, zval = list(self.normal(np.array([x,y])))
                 self.normalmap[y,x] = [xval,yval,zval]

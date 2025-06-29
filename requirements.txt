@@ -10,6 +10,6 @@ pytest
 mypy
 toml
 types-toml
-# nimporter
+nimporter
 setuptools
 numba

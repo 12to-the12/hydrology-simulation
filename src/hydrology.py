@@ -55,8 +55,8 @@ class Particle:
         self.sediment = 0  # sediment concentration
 
         self.density = 1
-        self.friction = 1  # 1 for a second is 0
-        self.evaporation_rate = 1e-1 #.05
+        self.friction = 0.8  # 1 for a second is 0
+        self.evaporation_rate = 1e-3 #.05
         self.deposition_rate = 8 # 4
         self.age = 0
         self.steps = 0

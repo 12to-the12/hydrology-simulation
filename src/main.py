@@ -17,6 +17,8 @@ def erosion():
     except:
         print("cache miss, generating noise map and saving to file...")
         terrain = Terrain()
+
+        print("rendering normalmaps")
         terrain.save_normalmaps()
         terrain.save_heightmap()
         print("terrain generated...")
@@ -33,7 +35,6 @@ def erosion():
 
     # quit()
 
-    terrain.save_normalmaps()
     print("eroding...")
 
     erode_terrain(terrain)
@@ -50,15 +51,16 @@ def testnim():
     import sim
     print("testing nim...")
     
-    tt = sim.Terrain()
-    tt.setNumber(12,2,2)
-    print(tt.getNumber(2,2))
-    print("nim tested!")
-    tt = sim.brownianTerrain(12)
-    sim.printHeightmap(tt)
+    # tt = sim.Terrain()
+    # tt.setNumber(12,2,2)
+    # print(tt.getNumber(2,2))
+    # print("nim tested!")
+    # tt = sim.brownianTerrain(12)
+    # sim.printHeightmap(tt)
+    sim.Main()
 
     
 
 if __name__ == "__main__":
-    erosion()
-    # testnim()
+    # erosion()
+    testnim()
