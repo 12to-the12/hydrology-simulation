@@ -62,5 +62,7 @@ def testnim():
     
 
 if __name__ == "__main__":
+    # print("eroding in Python:")
     # erosion()
+    print("eroding in Nim:")
     testnim()

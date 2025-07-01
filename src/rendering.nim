@@ -23,9 +23,22 @@ func normals*(x: int, y: int, terrain: Terrain): Color =
         color(x, 0.0, ix)
         # color(0.5,0.0,0.0)
 
-func particledensity*(x: int, y: int, terrain: Terrain): Color =
-    var particledensity: float = terrain.getParticleDensity(x,y)
-    color(particledensity, particledensity, particledensity)
+func impact*(x: int, y: int, terrain: Terrain): Color =
+    var impact: float = terrain.getimpact(x,y)
+    color(0.0, 0.0, impact)
+    # color(mx, 0.0, -mx)
+
+func volume*(x: int, y: int, terrain: Terrain): Color =
+    var volume: float = terrain.getvolume(x,y)
+    color(0.0, 0.0, volume/1e2)
+    # color(mx, 0.0, -mx)
+
+func momentum*(x: int, y: int, terrain: Terrain): Color =
+    var mx: float = terrain.getMomentum(x,y)[0]
+    var my: float = terrain.getMomentum(x,y)[1]
+    var momentum: float = terrain.getMomentum(x,y).magnitude
+    color(momentum/1e2, 0.0, momentum/1e1)
+    # color(mx, 0.0, -mx)
 
 func heightmap*(x: int, y: int, terrain: Terrain): Color =
     var height: float = terrain.getNumber(x, y)/TERRAIN_HEIGHT
@@ -45,6 +58,10 @@ proc renderTerrain*(terrain: Terrain) =
     myimage.writeFile("normals.png")
     myimage.fillImage(heightmap, terrain)
     myimage.writeFile("heightmap.png")
-    myimage.fillImage(particledensity, terrain)
+    myimage.fillImage(momentum, terrain)
     myimage.writeFile("momentum.png")
+    myimage.fillImage(volume, terrain)
+    myimage.writeFile("volume.png")
+    myimage.fillImage(impact, terrain)
+    myimage.writeFile("impact.png")
 

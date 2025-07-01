@@ -1,11 +1,23 @@
 
 const
-    SEED* = 3
+    SEED* = 7
     ROWS* = 512
-    COLUMNS* = 512
-    OCTAVES* = 10
+    COLUMNS* = ROWS
+    OCTAVES* = 16
     LACUNARITY*: float = 2
     PERSISTENCE*: float = 2.1
     TERRAIN_HEIGHT* = ROWS
-    PARTICLES* = 1_000_000
-    MAX_AGE* = 10_000
+    PARTICLES* = 10_000_000
+    # MAX_AGE* = 100
+    COMPUTE_INTERVAL* = 100_000
+    RENDER_INTERVAL* = 100_000
+    MOMENTUM_FADE* = 0.1
+    FRICTION* = 1.0
+    MOMENTUM_SCALING* = 1e0
+
+    DENSITY*: float = 1
+    DEPOSITION_RATE* = 1e-1
+    EVAPORATION_RATE* = 1e-2
+    MIN_VOLUME* = 1e-2
+
+    MAX_REPOSE* = 0.0

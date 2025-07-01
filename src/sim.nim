@@ -14,6 +14,7 @@ proc saveImageTest*() {.exportpy.} =
         terrain: Terrain = brownianTerrain(SEED, ROWS, COLUMNS, OCTAVES, LACUNARITY, PERSISTENCE)
     echo "eroding terrain..."
     terrain.erode(PARTICLES)    
+    echo "done eroding"
     # echo "rendering terrain..."    
     # renderTerrain(terrain)
 

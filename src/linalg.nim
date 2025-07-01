@@ -46,8 +46,17 @@ func cross*(a: vector3d, b: vector3d): vector3d =
 
 
 
+func `dot`*(a: vector2d, b:vector2d): float =
+    a[0]*b[0]+a[1]*b[1]
+
+func `+`*(a: vector2d, b:float): vector2d =
+    [a[0]+b,a[1]+b]
+
 func `+`*(a: vector2d, b:vector2d): vector2d =
     [a[0]+b[0],a[1]+b[1]]
+
+func `*`*(a: vector2d, b:float): vector2d =
+    [a[0]*b,a[1]*b]
 
 func `/`*(a: vector2d, b:float): vector2d =
     [a[0]/b,a[1]/b]
@@ -61,6 +70,7 @@ func magnitude*(vec: vector3d): float =
 
 func unitize*(vec: vector2d): vector2d = 
     let mag: float = vec.magnitude
+    if mag==0: return [0.0,0.0]
     vec/mag
 
 func unitize*(vec: vector3d): vector3d = 

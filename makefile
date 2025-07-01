@@ -7,10 +7,16 @@ all: install run
 install:
 	setup 3.12 uv
 
+debug:
+	- trash ./src/__pycache__
+	- trash /home/logan/.cache/nim/sim_*/
+	nim compile --run --threads ./src/sim.nim
+
 run:
 	- trash ./src/__pycache__
 	- trash /home/logan/.cache/nim/sim_*/
-	.venv/bin/python src/main.py
+	nim compile --run --threads -d:release ./src/sim.nim
+	# .venv/bin/python src/main.py
 
 test:
 	.venv/bin/python -m pytest ./src/*
