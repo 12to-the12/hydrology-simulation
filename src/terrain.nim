@@ -4,16 +4,17 @@ import std/math
 import linalg
 
 
-type Cell = ref object
-    height: float
+type Cell* = ref object
+    height*: float
     temperature: float # K
     oxygen: float
     fixed_nitrogen: float
     humidity: float    # %
     wind: vector2d
-    volume: float
+    volume*: float
+    volume_acc*: float
     impact: float
-    hydraulic_momentum_acc: vector2d
+    hydraulic_momentum_acc*: vector2d
     hydraulic_momentum: vector2d
 
 
@@ -24,6 +25,9 @@ type Terrain* = ref object
     height* = ROWS
     rows: array[ROWS, array[COLUMNS, Cell]]
 
+func get_cell*(self: Terrain, pos: vector2d): Cell =
+    self.rows[(pos[1].int+self.height) mod self.height][(pos[0].int+self.width) mod self.width]
+
 func get_cell(self: Terrain, x: int, y: int): Cell =
     self.rows[(y+self.height) mod self.height][(x+self.width) mod self.width]
     # self.rows[y][x]
@@ -32,8 +36,8 @@ proc Δimpact*(self: Terrain, value: float, x: int, y: int) =
     self.get_cell(x, y).impact += value*MOMENTUM_FADE
 
 
-proc Δvolume*(self: Terrain, value: float, x: int, y: int) =
-    self.get_cell(x, y).volume += value*MOMENTUM_FADE
+# proc Δvolume*(self: Terrain, value: float, x: int, y: int) =
+#     self.get_cell(x, y).volume += value*MOMENTUM_FADE
 
 
 proc getimpact*(self: Terrain, x: int, y: int): float =
@@ -66,8 +70,12 @@ func simplexGrid(seed: int, frequency: float): Grid =
 func computeMaps*(self: Terrain) =
     for x in 0 ..< COLUMNS:
         for y in 0 ..< ROWS:
-            # self.rows[y][x].impact = self.getimpact(x,y)*(1-MOMENTUM_FADE)
-            self.rows[y][x].volume = self.getvolume(x, y)*(1-MOMENTUM_FADE)
+            self.rows[y][x].volume = self.rows[y][
+                    x].volume*(1-MOMENTUM_FADE)+self.rows[y][
+                    x].volume_acc*MOMENTUM_FADE
+            self.rows[y][x].volume_acc = 0.0
+
+
             self.rows[y][x].hydraulic_momentum = self.rows[y][
                     x].hydraulic_momentum*(1-MOMENTUM_FADE)+self.rows[y][
                     x].hydraulic_momentum_acc*MOMENTUM_FADE

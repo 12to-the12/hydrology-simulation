@@ -18,7 +18,10 @@ type Particle = object
     sediment: float # total transported sediment in cubic meter
     steps: int
     age: float
+    terrain: Terrain
 
+func cell(particle: Particle): Cell =
+    particle.terrain.get_cell(particle.pos)
 
 func speed(particle: Particle): float =
     particle.velocity.magnitude
@@ -38,6 +41,7 @@ proc dropParticle(terrain: Terrain) =
 
     var particle = Particle()
     var normal: vector2d
+    particle.terrain = terrain
     particle.pos = [x, y]
     particle.volume = 1.0
     particle.velocity = [0.0, 0.0]
@@ -51,13 +55,14 @@ proc dropParticle(terrain: Terrain) =
         
         # if age > MAX_AGE: return
         if particle.volume < MIN_VOLUME: return
-        startheight = terrain.getNumber(particle.pos.x.int, particle.pos.y.int)
+        startheight = particle.cell.height
+        # startheight = terrain.getNumber(particle.pos.x.int, particle.pos.y.int)
         normal = terrain.get_normal_2d(particle.pos.x.int, particle.pos.y.int)
 
         startpos = particle.pos
 
         ## both
-        particle.velocity = particle.velocity+normal.unitize*0.1
+        particle.velocity = particle.velocity+normal
 
         ## MOMENTUM MAP STUFF
         var momentum = terrain.getMomentum(particle.pos.x.int,
@@ -75,16 +80,20 @@ proc dropParticle(terrain: Terrain) =
         # echo "normal: ", normal.unitize
         dt = 1/particle.velocity.magnitude
         age += dt
-        Δheight = startheight-terrain.getNumber(particle.pos.x.int,
-                particle.pos.y.int)
+
+        Δheight = startheight-particle.cell.height
+        # Δheight = startheight-terrain.getNumber(particle.pos.x.int,
+        #         particle.pos.y.int)
         # if Δheight>0: return
 
 
         # echo "Δheight: ", Δheight
-        terrain.Δvolume(particle.volume, particle.pos.x.int,
-                particle.pos.y.int)
-        terrain.ΔMomentum(particle.velocity, particle.pos.x.int,
-                particle.pos.y.int)
+        particle.cell.volume_acc += particle.volume
+        # terrain.Δvolume(particle.volume, particle.pos.x.int,
+        #         particle.pos.y.int)
+        particle.cell.hydraulic_momentum_acc += particle.velocity
+        # terrain.ΔMomentum(particle.velocity, particle.pos.x.int,
+        #         particle.pos.y.int)
 
 
 
@@ -93,8 +102,10 @@ proc dropParticle(terrain: Terrain) =
 
 
         # volume * speed * change in height
-        let local_flow_rate = terrain.get_volume(particle.pos.x.int,
-                particle.pos.y.int)
+        
+        let local_flow_rate = particle.cell.volume
+        # let local_flow_rate = terrain.get_volume(particle.pos.x.int,
+        #         particle.pos.y.int)
 
         var carrying_capacity: float = particle.volume * particle.speed * Δheight
         # var carrying_capacity: float = particle.volume * particle.speed * Δheight
@@ -128,6 +139,8 @@ proc dropParticle(terrain: Terrain) =
         # echo "deposited:", deposited
         # echo "otherwise:", -Δheight/2
 
+
+        # particle.cell.height -= deposited
         terrain.Δheight(-deposited, startpos.x.int, startpos.y.int)
 
         # var newΔheight = startheight-terrain.getNumber(particle.pos.x.int,
