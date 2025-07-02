@@ -23,6 +23,9 @@ type Particle = object
 func cell(particle: Particle): Cell =
     particle.terrain.get_cell(particle.pos)
 
+func momentum(particle: Particle): vector2d =
+    particle.velocity*particle.volume
+
 func speed(particle: Particle): float =
     particle.velocity.magnitude
 
@@ -62,11 +65,10 @@ proc dropParticle(terrain: Terrain) =
         startpos = particle.pos
 
         ## both
-        particle.velocity = particle.velocity+normal
+        particle.velocity = particle.velocity+normal # no longer unitized
 
         ## MOMENTUM MAP STUFF
-        var momentum = terrain.getMomentum(particle.pos.x.int,
-                particle.pos.y.int).unitize
+        var momentum = particle.cell.hydraulic_momentum.unitize
         var scaling = (normal.unitize).dot(momentum.unitize)
 
         particle.velocity = particle.velocity+momentum*(
@@ -91,7 +93,7 @@ proc dropParticle(terrain: Terrain) =
         particle.cell.volume_acc += particle.volume
         # terrain.Δvolume(particle.volume, particle.pos.x.int,
         #         particle.pos.y.int)
-        particle.cell.hydraulic_momentum_acc += particle.velocity
+        particle.cell.hydraulic_momentum_acc += particle.momentum
         # terrain.ΔMomentum(particle.velocity, particle.pos.x.int,
         #         particle.pos.y.int)
 
@@ -140,8 +142,11 @@ proc dropParticle(terrain: Terrain) =
         # echo "otherwise:", -Δheight/2
 
 
-        # particle.cell.height -= deposited
-        terrain.Δheight(-deposited, startpos.x.int, startpos.y.int)
+        # for fucks sake. The only error was modifying the current not starting cell, everything else was fine
+        particle.terrain.get_cell(startpos).height -= deposited
+        # terrain.Δheight(-deposited, startpos.x.int, startpos.y.int)
+
+
 
         # var newΔheight = startheight-terrain.getNumber(particle.pos.x.int,
         #         particle.pos.y.int)

@@ -13,9 +13,9 @@ type Cell* = ref object
     wind: vector2d
     volume*: float
     volume_acc*: float
-    impact: float
+    impact*: float
     hydraulic_momentum_acc*: vector2d
-    hydraulic_momentum: vector2d
+    hydraulic_momentum*: vector2d
 
 
 
@@ -28,7 +28,7 @@ type Terrain* = ref object
 func get_cell*(self: Terrain, pos: vector2d): Cell =
     self.rows[(pos[1].int+self.height) mod self.height][(pos[0].int+self.width) mod self.width]
 
-func get_cell(self: Terrain, x: int, y: int): Cell =
+func get_cell*(self: Terrain, x: int, y: int): Cell =
     self.rows[(y+self.height) mod self.height][(x+self.width) mod self.width]
     # self.rows[y][x]
 
@@ -38,29 +38,6 @@ proc Δimpact*(self: Terrain, value: float, x: int, y: int) =
 
 # proc Δvolume*(self: Terrain, value: float, x: int, y: int) =
 #     self.get_cell(x, y).volume += value*MOMENTUM_FADE
-
-
-proc getimpact*(self: Terrain, x: int, y: int): float =
-    self.get_cell(x, y).impact
-
-proc getvolume*(self: Terrain, x: int, y: int): float =
-    self.get_cell(x, y).volume
-
-proc ΔMomentum*(self: Terrain, value: vector2d, x: int, y: int) =
-    self.get_cell(x, y).hydraulic_momentum_acc += value
-
-proc Δheight*(self: Terrain, value: float, x: int, y: int) =
-    self.get_cell(x, y).height += value
-
-proc setNumber*(self: Terrain, value: float, x: int, y: int) =
-    self.get_cell(x, y).height = value
-
-proc getNumber*(self: Terrain, x: int, y: int): float =
-    self.get_cell(x, y).height
-
-proc getMomentum*(self: Terrain, x: int, y: int): vector2d =
-    self.get_cell(x, y).hydraulic_momentum
-
 
 func simplexGrid(seed: int, frequency: float): Grid =
     var simplex = initSimplex(seed)
@@ -122,11 +99,11 @@ func brownianTerrain*(seed: int, rows: int, columns: int, octaves: int,
 proc get_normal*(terrain: Terrain, x: int, y: int): vector3d =
     # top_left =
     let
-        left = terrain.getNumber(x-1, y)
-        right = terrain.getNumber(x+1, y)
-        up = terrain.getNumber(x, y-1)
-        down = terrain.getNumber(x, y+1)
-        center = terrain.getNumber(x, y)
+        left = terrain.get_cell(x-1, y).height
+        right = terrain.get_cell(x+1, y).height
+        up = terrain.get_cell(x, y-1).height
+        down = terrain.get_cell(x, y+1).height
+        center = terrain.get_cell(x, y).height
 
         topleft = [-1.0, 0.0, left-center].cross([0.0, -1.0, up-center])
         topright = [0.0, -1.0, up-center].cross([1.0, 0.0, right-center])

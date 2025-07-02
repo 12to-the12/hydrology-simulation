@@ -24,24 +24,22 @@ func normals*(x: int, y: int, terrain: Terrain): Color =
         # color(0.5,0.0,0.0)
 
 func impact*(x: int, y: int, terrain: Terrain): Color =
-    var impact: float = terrain.getimpact(x,y)
+    var impact: float = terrain.get_cell(x,y).impact
     color(0.0, 0.0, impact)
     # color(mx, 0.0, -mx)
 
 func volume*(x: int, y: int, terrain: Terrain): Color =
-    var volume: float = terrain.getvolume(x,y)
+    var volume: float = terrain.get_cell(x,y).volume
     color(0.0, 0.0, volume/1e2)
     # color(mx, 0.0, -mx)
 
 func momentum*(x: int, y: int, terrain: Terrain): Color =
-    var mx: float = terrain.getMomentum(x,y)[0]
-    var my: float = terrain.getMomentum(x,y)[1]
-    var momentum: float = terrain.getMomentum(x,y).magnitude
+    var momentum: float = terrain.get_cell(x,y).hydraulic_momentum.magnitude
     color(momentum/1e2, momentum/1e2, momentum/1e0)
     # color(mx, 0.0, -mx)
 
 func heightmap*(x: int, y: int, terrain: Terrain): Color =
-    var height: float = terrain.getNumber(x, y)/TERRAIN_HEIGHT
+    var height: float = terrain.get_cell(x,y).height/TERRAIN_HEIGHT
     color(height, height, height)
 
 proc fillImage(image: Image, f: pixelfunction, terrain: Terrain) =
