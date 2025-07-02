@@ -37,7 +37,7 @@ func momentum*(x: int, y: int, terrain: Terrain): Color =
     var mx: float = terrain.getMomentum(x,y)[0]
     var my: float = terrain.getMomentum(x,y)[1]
     var momentum: float = terrain.getMomentum(x,y).magnitude
-    color(momentum/1e2, 0.0, momentum/1e1)
+    color(momentum/1e2, momentum/1e2, momentum/1e0)
     # color(mx, 0.0, -mx)
 
 func heightmap*(x: int, y: int, terrain: Terrain): Color =
@@ -55,13 +55,13 @@ proc fillImage(image: Image, f: pixelfunction, terrain: Terrain) =
 proc renderTerrain*(terrain: Terrain) =
     var myimage = newImage(ROWS, COLUMNS)
     myimage.fillImage(normals, terrain)
-    myimage.writeFile("normals.png")
+    myimage.writeFile("pictures/normals.png")
     myimage.fillImage(heightmap, terrain)
-    myimage.writeFile("heightmap.png")
+    myimage.writeFile("pictures/heightmap.png")
     myimage.fillImage(momentum, terrain)
-    myimage.writeFile("momentum.png")
+    myimage.writeFile("pictures/momentum.png")
     myimage.fillImage(volume, terrain)
-    myimage.writeFile("volume.png")
+    myimage.writeFile("pictures/volume.png")
     myimage.fillImage(impact, terrain)
-    myimage.writeFile("impact.png")
+    myimage.writeFile("pictures/impact.png")
 

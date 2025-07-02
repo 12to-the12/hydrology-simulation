@@ -45,12 +45,21 @@ func cross*(a: vector3d, b: vector3d): vector3d =
 
 
 
-
 func `dot`*(a: vector2d, b:vector2d): float =
     a[0]*b[0]+a[1]*b[1]
 
 func `+`*(a: vector2d, b:float): vector2d =
     [a[0]+b,a[1]+b]
+
+
+
+proc `*=`*(a: var vector2d, b:float) =
+    a = [a[0]*b,a[1]*b]
+
+
+
+proc `+=`*(a: var vector2d, b:vector2d) =
+    a = [a[0]+b[0],a[1]+b[1]]
 
 func `+`*(a: vector2d, b:vector2d): vector2d =
     [a[0]+b[0],a[1]+b[1]]
