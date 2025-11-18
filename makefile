@@ -1,36 +1,17 @@
-
-
-
 default: run
-all: install run
+all: build run
 
-install:
-	setup 3.12 uv
+build: format
+	cargo build --release
 
-debug:
-	- trash ./src/__pycache__
-	- trash /home/logan/.cache/nim/sim_*/
-	nim compile --run --threads ./src/sim.nim
-runpy:
-	- trash ./src/__pycache__
-	- trash /home/logan/.cache/nim/sim_*/
-	.venv/bin/python pysrc/main.py
-run:
-	- trash ./src/__pycache__
-	- trash /home/logan/.cache/nim/sim_*/
-	nim compile --run --threads -d:release ./src/sim.nim
+run: format
+	cargo run --release
 
-test:
-	.venv/bin/python -m pytest ./src/*
+test: format
+	cargo test
 
-lint:
-	.venv/bin/python -m mypy ./src/
+format:
+	cargo fmt
 
-clean:
-	- trash {./venv/,./.venv/}
-
-grab:
-	- rm ./remote/*.png
-	rsync -avzPh services:~/projects/sim/{heightmap,delta,mag,paths,trace,x,y}.png \
-	./remote/
-	nemo ./remote/
+check: format
+	cargo check

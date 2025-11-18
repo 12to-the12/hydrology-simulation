@@ -46,7 +46,8 @@ proc dropParticle(terrain: Terrain) =
     var normal: vector2d
     particle.terrain = terrain
     particle.pos = [x, y]
-    particle.volume = 1.0
+    particle.volume = 1.0 # 1.0
+
     particle.velocity = [0.0, 0.0]
     particle.steps = 0
     particle.sediment = 0.0
@@ -174,8 +175,14 @@ proc dropParticle(terrain: Terrain) =
 
 
 # inplace
-proc erode*(terrain: Terrain, particles: int) =
+proc hydrological_erosion*(terrain: Terrain, particles: int) =
     randomize()
+    var
+        total_volume: float
+        prev_total_volume: float
+        Δ: float
+    prev_total_volume = 0.0
+
     for particle in 0..<particles:
         if particle mod COMPUTE_INTERVAL == 0:
             echo "computing maps..."
@@ -184,6 +191,13 @@ proc erode*(terrain: Terrain, particles: int) =
             echo particle
         if particle mod RENDER_INTERVAL == 0:
             echo particle
-            renderTerrain(terrain)
+            total_volume = terrain.get_total_volume
+            Δ = total_volume-prev_total_volume
+            prev_total_volume = total_volume
+            echo "total volume (k m^3): ",  total_volume/1e3
+            echo "total standing water (k m^3): ",  terrain.get_standing_water/1e3
+            echo "Δ (k m^3): ",  Δ/1e3
+
+            terrain.renderTerrain()
         terrain.dropParticle()
 

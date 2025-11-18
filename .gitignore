@@ -53,3 +53,7 @@ docs/_build/
 animation/
 pictures/
 *.png
+
+# Added by cargo
+
+/target

@@ -1,0 +1,10 @@
+[package]
+name = "sim"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+image = "0.25.8"
+nalgebra = "0.34.1"
+noise = "0.9.0"
+stopwatch = "0.0.7"

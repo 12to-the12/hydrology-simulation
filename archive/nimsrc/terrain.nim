@@ -16,6 +16,7 @@ type Cell* = ref object
     impact*: float
     hydraulic_momentum_acc*: vector2d
     hydraulic_momentum*: vector2d
+    atmospheric_water*: float
 
 
 
@@ -25,12 +26,28 @@ type Terrain* = ref object
     height* = ROWS
     rows: array[ROWS, array[COLUMNS, Cell]]
 
+
+
 func get_cell*(self: Terrain, pos: vector2d): Cell =
     self.rows[(pos[1].int+self.height) mod self.height][(pos[0].int+self.width) mod self.width]
 
 func get_cell*(self: Terrain, x: int, y: int): Cell =
     self.rows[(y+self.height) mod self.height][(x+self.width) mod self.width]
     # self.rows[y][x]
+
+func get_standing_water*(self: Terrain): float =
+    var total_volume = 0.0
+    for x in 0 ..< COLUMNS:
+        for y in 0 ..< ROWS:
+            total_volume += self.get_cell(x,y).volume
+    total_volume
+
+func get_total_volume*(self: Terrain): float =
+    var total_volume = 0.0
+    for x in 0 ..< COLUMNS:
+        for y in 0 ..< ROWS:
+            total_volume += self.get_cell(x,y).height
+    total_volume
 
 proc Δimpact*(self: Terrain, value: float, x: int, y: int) =
     self.get_cell(x, y).impact += value*MOMENTUM_FADE
@@ -90,6 +107,7 @@ func brownianTerrain*(seed: int, rows: int, columns: int, octaves: int,
 
             height *= sin(x.float*3.14159/ROWS)*0.5+sin(
                     y.float*3.14159/COLUMNS)*0.5
+            # if height<100: height = 100
             output.rows[y][x] = new Cell
             output.get_cell(x, y).height = height
             # output.setNumber(height, x, y)
@@ -118,3 +136,27 @@ proc get_normal*(terrain: Terrain, x: int, y: int): vector3d =
 func get_normal_2d*(terrain: Terrain, x: int, y: int): vector2d =
     [terrain.get_normal(x, y)[0], terrain.get_normal(x, y)[1]]
     # [1.0,1.0]
+
+
+proc advance_climate*(self: Terrain) =
+    echo "advancing climate..."
+    for _ in 0..<10:
+        for x in countdown(COLUMNS-1,0):
+            for y in 0..<ROWS:
+                var cell = self.get_cell(x,y)
+                
+                if x==0:
+                    cell.atmospheric_water = 0.0
+                    continue
+                cell.atmospheric_water = self.get_cell(x-1,y).atmospheric_water
+                
+
+                var gradient = cell.volume - cell.atmospheric_water
+                if gradient<0: continue
+                cell.atmospheric_water+=gradient*cell.volume*1e-3
+    
+        for x in countdown(COLUMNS-1,0):
+            for y in 0..<ROWS:
+                var cell = self.get_cell(x,y)
+                cell.atmospheric_water*=0.95
+

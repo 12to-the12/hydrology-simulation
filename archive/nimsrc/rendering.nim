@@ -23,6 +23,21 @@ func normals*(x: int, y: int, terrain: Terrain): Color =
         color(x, 0.0, ix)
         # color(0.5,0.0,0.0)
 
+func pretty*(x: int, y: int, terrain: Terrain): Color =
+    var height: float = terrain.get_cell(x,y).height
+    var volume: float = terrain.get_cell(x,y).volume
+    var slope: float = terrain.get_normal_2d(x,y).magnitude
+    if height<100: return color(0.0, 0.0, 1.0)
+    # if height>600: return color(1.0, 1.0, 1.0)
+    # if volume>50: return color(0.1, 0.1, volume/100)
+    if slope>0.9: return color(slope, slope, slope)
+    color(0.0, 1-volume/100, volume/100)
+    # color(mx, 0.0, -mx)
+
+func atmospheric_water*(x: int, y: int, terrain: Terrain): Color =
+    var atmospheric_water: float = terrain.get_cell(x,y).atmospheric_water
+    color(atmospheric_water, atmospheric_water, atmospheric_water)
+    # color(mx, 0.0, -mx)
 func impact*(x: int, y: int, terrain: Terrain): Color =
     var impact: float = terrain.get_cell(x,y).impact
     color(0.0, 0.0, impact)
@@ -30,7 +45,7 @@ func impact*(x: int, y: int, terrain: Terrain): Color =
 
 func volume*(x: int, y: int, terrain: Terrain): Color =
     var volume: float = terrain.get_cell(x,y).volume
-    color(0.0, 0.0, volume/1e2)
+    color(volume/1e2, volume/1e2, volume/1e0)
     # color(mx, 0.0, -mx)
 
 func momentum*(x: int, y: int, terrain: Terrain): Color =
@@ -52,6 +67,8 @@ proc fillImage(image: Image, f: pixelfunction, terrain: Terrain) =
 
 proc renderTerrain*(terrain: Terrain) =
     var myimage = newImage(ROWS, COLUMNS)
+    myimage.fillImage(pretty, terrain)
+    myimage.writeFile("pictures/pretty.png")
     myimage.fillImage(normals, terrain)
     myimage.writeFile("pictures/normals.png")
     myimage.fillImage(heightmap, terrain)
@@ -62,4 +79,6 @@ proc renderTerrain*(terrain: Terrain) =
     myimage.writeFile("pictures/volume.png")
     myimage.fillImage(impact, terrain)
     myimage.writeFile("pictures/impact.png")
+    myimage.fillImage(atmospheric_water, terrain)
+    myimage.writeFile("pictures/atmospheric_water.png")
 
