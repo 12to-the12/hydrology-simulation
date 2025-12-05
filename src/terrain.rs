@@ -5,7 +5,7 @@ use nalgebra::{Matrix3x1, SVector};
 use noise::{NoiseFn, Simplex};
 pub fn save_image(canvas: ImageBuffer<Rgb<u8>, Vec<u8>>, name: &str) -> () {
     canvas
-        .save_with_format(name.to_owned() + ".png", ImageFormat::Png)
+        .save_with_format("pictures/".to_owned() + name + ".png", ImageFormat::Png)
         .unwrap();
 }
 type Vec3 = SVector<f32, 3>;
@@ -46,7 +46,7 @@ impl Terrain {
         return out;
     }
     #[allow(nonstandard_style)]
-    pub fn compute_normals(&mut self) -> () {
+    fn compute_normals(&mut self) -> () {
         for i in 1..(self.shape().0 - 1) {
             for j in 1..(self.shape().1 - 1) {
                 // println!("{:?}", (i, j));
@@ -68,7 +68,7 @@ impl Terrain {
                     + bottomright.normalize())
                 .normalize()
                 .into();
-                println!("{:?}", normal);
+                // println!("{:?}", normal);
                 // topleft = [-1.0, 0.0, left-center].cross([0.0, -1.0, up-center])
                 // topright = [0.0, -1.0, up-center].cross([1.0, 0.0, right-center])
                 // bottomleft = [0.0, 1.0, down-center].cross([-1.0, 0.0, left-center])
