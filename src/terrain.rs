@@ -1,8 +1,9 @@
 extern crate nalgebra as na;
 use image::{ImageBuffer, ImageFormat, Rgb, RgbImage};
 use na::DMatrix;
-use nalgebra::{Matrix3x1, SVector};
-use noise::{NoiseFn, Simplex};
+use nalgebra::{ComplexField, Matrix3x1, SVector};
+use noise::{NoiseFn, Seedable, Simplex};
+use rand::Rng;
 pub fn save_image(canvas: ImageBuffer<Rgb<u8>, Vec<u8>>, name: &str) -> () {
     canvas
         .save_with_format("pictures/".to_owned() + name + ".png", ImageFormat::Png)
@@ -44,6 +45,9 @@ impl Terrain {
             Terrain::brownian_terrain(seed, rows, columns, octaves, lacunarity, persistence);
         out.compute_normals();
         return out;
+    }
+    pub fn set_height(&mut self, value: f32, x: usize, y: usize) {
+        self.height[(x, y)] = value
     }
     #[allow(nonstandard_style)]
     fn compute_normals(&mut self) -> () {
@@ -87,18 +91,26 @@ impl Terrain {
     pub fn shape(&self) -> (usize, usize) {
         return self.height.shape();
     }
+    fn width(&self) -> usize {
+        self.shape().0
+    }
+
+    #[inline(always)]
     fn brownian_terrain(
         seed: usize,
         rows: usize,
         columns: usize,
-        octaves: usize,
+        _: usize,
         lacunarity: f32,
         persistence: f32,
     ) -> Terrain {
-        let noisefunc = Simplex::new(seed as u32);
-        let mut terrain = Terrain::blank(rows, columns);
+        // let noisefunc = Simplex::new(seed as u32);
 
+        let mut terrain = Terrain::blank(rows, columns);
+        let octaves = (rows as f32).log(lacunarity).ceil() as usize + 1;
+        // let octaves = 1;
         for octave in 0..octaves {
+            let noisefunc = Simplex::new((seed + octave) as u32);
             let frequency = (lacunarity as f32).powf(octave as f32) / (rows as f32);
             let height = DMatrix::<f32>::from_fn(rows, columns, |x, y| {
                 noisefunc.get([
@@ -106,7 +118,7 @@ impl Terrain {
                     ((y as f32) * frequency) as f64,
                 ]) as f32
             });
-            terrain.height += height / persistence.powf(octave as f32);
+            terrain.height += height * persistence.powf(octave as f32);
         }
 
         // normalize to [0,1]
@@ -115,7 +127,7 @@ impl Terrain {
 
         // println!("{:?}", terrain.height.sum() / ((rows * columns) as f32));
         // terrain.height /= terrain.height.sum();
-        terrain.height *= 512.; // usually starts around 0.5
+        terrain.height *= terrain.shape().0 as f32; // usually starts around 0.5
 
         terrain
     }
@@ -134,9 +146,9 @@ impl Terrain {
         self.value_to_image(
             |i, j| {
                 Rgb([
-                    (self.height[(i, j)] / self.shape().0 as f32 * 128.) as u8,
-                    (self.height[(i, j)] / 512. * 128.) as u8,
-                    (self.height[(i, j)] / 512. * 128.) as u8,
+                    (self.height[(i, j)] / self.width() as f32 * 255.) as u8,
+                    (self.height[(i, j)] / self.width() as f32 * 255.) as u8,
+                    (self.height[(i, j)] / self.width() as f32 * 255.) as u8,
                 ])
             },
             "height",
@@ -176,6 +188,12 @@ impl Terrain {
                 ])
             },
             "y",
+        )
+    }
+    pub fn random_location(&self) -> (usize, usize) {
+        (
+            rand::rng().random_range(0..self.shape().0),
+            rand::rng().random_range(0..self.shape().1),
         )
     }
 }

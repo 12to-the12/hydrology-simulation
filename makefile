@@ -4,8 +4,9 @@ all: build run
 build: format
 	cargo build --release
 
-run: format
-	cargo run --release
+run: build
+	./target/release/sim
+	
 
 test: format
 	cargo test
