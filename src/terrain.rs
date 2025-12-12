@@ -1,9 +1,9 @@
 extern crate nalgebra as na;
 use image::{ImageBuffer, ImageFormat, Rgb, RgbImage};
 use na::DMatrix;
-use nalgebra::{ComplexField, Matrix3x1, SVector};
-use noise::{NoiseFn, Seedable, Simplex};
-use rand::Rng;
+use nalgebra::{Matrix3x1, SVector};
+use noise::{NoiseFn, Simplex};
+use rand::{Rng, rngs::SmallRng};
 pub fn save_image(canvas: ImageBuffer<Rgb<u8>, Vec<u8>>, name: &str) -> () {
     canvas
         .save_with_format("pictures/".to_owned() + name + ".png", ImageFormat::Png)
@@ -26,6 +26,7 @@ pub struct Terrain {
     // _hydraulic_momentum_acc: DMatrix<2Vec>,
     // _hydraulic_momentum: DMatrix<2Vec>,
     // _atmospheric_water: DMatrix<f32>,
+    // rng: rand::rngs::SmallRng,
 }
 impl Default for Terrain {
     fn default() -> Terrain {
@@ -86,6 +87,7 @@ impl Terrain {
             height: DMatrix::<f32>::zeros(rows, columns),
             _surface_water: DMatrix::<f32>::zeros(rows, columns),
             normal: DMatrix::<Vec3>::from_element(rows, columns, Vec3::new(0., 0., 0.)),
+            // rng: rand::rngs::SmallRng::from_os_rng(),
         }
     }
     pub fn shape(&self) -> (usize, usize) {
@@ -190,10 +192,13 @@ impl Terrain {
             "y",
         )
     }
-    pub fn random_location(&self) -> (usize, usize) {
+    pub fn random_location(&self, rng: &mut SmallRng) -> (usize, usize) {
         (
-            rand::rng().random_range(0..self.shape().0),
-            rand::rng().random_range(0..self.shape().1),
+            rng.random_range(0..self.shape().0),
+            rng.random_range(0..self.shape().1),
         )
+    }
+    pub fn in_bounds(&self, coor: (usize, usize)) -> bool {
+        coor.0 < self.shape().0 && coor.1 < self.shape().1
     }
 }

@@ -1,61 +1,81 @@
-use crate::terrain::Terrain;
+use crate::terrain::{self, Terrain};
+use rand::{SeedableRng, distr::Map};
 use rayon::prelude::*;
-use std::sync::mpsc; // multiproducer, single consumer
-// pub trait Drop {
-//     fn drop(&self, _: &mut Terrain) -> ();
-// }
+use std::sync::mpsc;
+use stopwatch::Stopwatch; // multiproducer, single consumer
 #[derive(Debug)]
 struct Particle {
-    location: (usize, usize),
+    coor: (f32, f32),
+    age: usize,
 }
-
 impl Particle {
-    fn drop(terrain: &Terrain) -> () {
-        let particle = Particle {
-            location: terrain.random_location(),
-        };
-        // println!("{:?}", particle.location);
-        // println!("{}", terrain.shape().0);
+    pub fn new(coor: Coor) -> Particle {
+        Particle {
+            coor: (coor.0 as f32, coor.1 as f32),
+            age: 0,
+        }
+    }
+    fn drop(terrain: &Terrain, coor: Coor) -> Vec<MapUpdate> {
+        let mut particle = Particle::new(coor);
+        let mut out = Vec::new();
+
+        while particle.age < 100 && terrain.in_bounds(coor) {
+            particle.age()
+        }
+        out.push((0., particle.coor()));
+        return out;
+    }
+    pub fn age(&mut self) {
+        self.age += 1;
+    }
+    pub fn coor(&self) -> Coor {
+        (self.coor.0 as usize, self.coor.1 as usize)
     }
 }
-fn fake_workload(terrain: &Terrain, sender: mpsc::Sender<(usize, usize)>) -> () {
-    Particle::drop(&terrain);
-    for _ in 0..1 {
-        // thread::sleep(Duration::from_millis(myval as u64));
-        sender.send(terrain.random_location()).unwrap();
+type Coor = (usize, usize);
+type MapUpdate = (f32, Coor);
+fn rain_on_me(terrain: &Terrain, sender: mpsc::Sender<Vec<MapUpdate>>, droplets: i32) -> () {
+    let mut threadtimer = Stopwatch::start_new();
+    let mut out: Vec<MapUpdate> = Vec::new();
+    let mut rng = rand::rngs::SmallRng::from_os_rng();
+
+    for _ in 0..droplets {
+        let coor: Coor = terrain.random_location(&mut rng);
+        out.extend(Particle::drop(&terrain, coor));
+        let update: MapUpdate = (32., coor);
+        out.push(update);
     }
+    sender.send(out).unwrap();
+    threadtimer.stop();
+
+    println!("threadtime: {:?}", threadtimer.elapsed());
 }
 pub fn erode<'a>(terrain: &'a mut Terrain) {
     println!("eroding...");
-    Particle::drop(terrain);
-    let (sender, receiver) = mpsc::channel::<(usize, usize)>();
 
-    let pool = rayon::ThreadPoolBuilder::new()
-        .num_threads(10)
-        .build()
-        .unwrap();
-    for _ in 0..65_000 {
+    let (sender, receiver) = mpsc::channel::<Vec<MapUpdate>>();
+    let mut timer = Stopwatch::start_new();
+    println!("making pool...");
+    (0..10).into_par_iter().for_each(|_| {
         let mysender = sender.clone();
-        pool.install(|| {
-            fake_workload(&terrain, mysender);
-        });
-    }
+        rain_on_me(&terrain, mysender, 10_000);
+    });
+    println!("left scope");
     drop(sender);
+    timer.stop();
+
+    println!("allocation: {:?}", timer.elapsed());
+    let mut timer = Stopwatch::start_new();
 
     for received in receiver {
-        println!("({},{})", received.0, received.1);
-        terrain.set_height(0.5, received.0, received.1);
+        for (value, coor) in received {
+            terrain.set_height(value, coor.0, coor.1);
+        }
     }
+
+    timer.stop();
+
+    println!("execution: {:?}", timer.elapsed());
+
     terrain.height_to_image();
-    // let handle = thread::spawn(move || {
-    //     fake_workload(sender, 77);
-    // });
-    // let handle = thread::spawn(move || {
-    //     fake_workload(sender1, 88);
-    // });
-    // for received in receiver {
-    //     println!("({},{})", received.0, received.1);
-    // }
-    // println!("we're done here");
-    // handle.join().unwrap()
 }
