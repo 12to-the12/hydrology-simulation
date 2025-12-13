@@ -10,14 +10,10 @@ use crate::terrain::Terrain;
 fn main() {
     println!(">");
     let mut frame = Stopwatch::start_new();
-    let mut terrain: Terrain = Terrain::new(11, 4096, 4096, 0, 2., 0.8);
+    let mut terrain: Terrain = Terrain::new(11, 4096, 4096, 0, 2.1, 0.4);
 
     frame.stop();
     println!("frame: {:?}", frame.elapsed());
 
-    terrain.height_to_image();
-    terrain.normal_to_image();
-    terrain.xnormal_to_image();
-    terrain.ynormal_to_image();
     erode(&mut terrain);
 }
