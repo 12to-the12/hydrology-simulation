@@ -1,11 +1,24 @@
 extern crate nalgebra as na;
+use std::{
+    f32::consts::E,
+    path::Iter,
+    rc::Rc,
+    sync::{Arc, Mutex},
+};
+
 use image::{ImageBuffer, ImageFormat, Rgb, RgbImage};
 use na::DMatrix;
-use nalgebra::{Matrix3x1, SVector};
+use nalgebra::{Dyn, Matrix, Matrix3x1, MatrixViewMut, SVector, ViewStorage, ViewStorageMut};
 use noise::{NoiseFn, Simplex};
 use rand::{Rng, rngs::SmallRng};
 
 use rayon::prelude::*;
+type MatrixSlice<'a> =
+    Matrix<f32, Dyn, Dyn, ViewStorage<'a, f32, Dyn, Dyn, nalgebra::Const<1>, Dyn>>;
+
+pub fn sigmoid(t: f32) -> f32 {
+    t / (1. + t.abs())
+}
 pub fn save_image(canvas: ImageBuffer<Rgb<u8>, Vec<u8>>, name: &str) -> () {
     canvas
         .save_with_format("pictures/".to_owned() + name + ".png", ImageFormat::Png)
@@ -19,6 +32,7 @@ pub struct Terrain {
     _surface_water: DMatrix<f32>,
     pub normal: DMatrix<Vec3>,
     pub stream_map: DMatrix<f32>,
+    pub Δheight: DMatrix<f32>,
     // _temperature: DMatrix<f32>, // Kelvin
     // _oxygen: DMatrix<f32>,
     // _fixed_nitrogen: DMatrix<f32>,
@@ -92,6 +106,7 @@ impl Terrain {
     fn blank(rows: usize, columns: usize) -> Self {
         Terrain {
             height: DMatrix::<f32>::zeros(rows, columns),
+            Δheight: DMatrix::<f32>::zeros(rows, columns),
             stream_map: DMatrix::<f32>::zeros(rows, columns),
             _surface_water: DMatrix::<f32>::zeros(rows, columns),
             normal: DMatrix::<Vec3>::from_element(rows, columns, Vec3::new(0., 0., 0.)),
@@ -145,6 +160,33 @@ impl Terrain {
 
         terrain
     }
+    pub fn slice_terrain_into_mutexes(&self, slices: usize) -> Vec<Vec<Arc<Mutex<MatrixSlice>>>> {
+        let tilesize = self.width() / slices;
+        // let vec: Vec<Vec<Mutex<MatrixViewMut<f32, R, C>>>> = Vec::new();
+        let mut vec: Vec<Vec<Arc<Mutex<MatrixSlice>>>> = Vec::new();
+        for i in 0..slices {
+            let mut jvec: Vec<Arc<Mutex<MatrixSlice>>> = Vec::new();
+            for j in 0..slices {
+                let view: MatrixSlice = self
+                    .height
+                    .view((i * tilesize, j * tilesize), (tilesize, tilesize));
+                jvec.push(Arc::new(Mutex::new(view)));
+            }
+            vec.push(jvec);
+        }
+        return vec;
+    }
+    pub fn select_tile(&self, coor: (usize, usize), tilecount: usize) -> usize {
+        // actually stripes, doesn't tile
+        let cellcount = self.width() * self.height();
+
+        // let tilesize = cellcount/tilecount;
+        let coor_index = self.width() * coor.0 + coor.1;
+        let index = coor_index / cellcount * tilecount;
+        // let index = coor_index/cellcount*(cellcount/tilecount);
+
+        return index;
+    }
     fn value_to_image<F: Fn(u32, u32) -> Rgb<u8> + std::marker::Sync + std::marker::Send>(
         &self,
         value: F,
@@ -164,10 +206,11 @@ impl Terrain {
     }
     pub fn render_all_images(&self) {
         self.height_to_image();
+        self.Δheight_to_image();
         self.stream_map_to_image();
         self.normal_to_image();
-        self.xnormal_to_image();
-        self.ynormal_to_image();
+        // self.xnormal_to_image();
+        // self.ynormal_to_image();
         self.pretty_to_image();
     }
     pub fn height_to_image(&self) -> () {
@@ -182,8 +225,30 @@ impl Terrain {
             "height",
         )
     }
+    pub fn Δheight_to_image(&self) -> () {
+        // let spread = sigmoid(self.Δheight.max()) - sigmoid(self.Δheight.min());
+        let min = sigmoid(self.Δheight.min());
+        println!("biggest deposit: {}", self.Δheight.max());
+        println!("biggest subtraction: {}", self.Δheight.min());
+        let max = sigmoid(self.Δheight.max());
+        // let max = self.Δheight.max();
+        self.value_to_image(
+            |i, j| {
+                let minmap = sigmoid(self.Δheight[(i as usize, j as usize)]) / min * 255.;
+                let maxmap = sigmoid(self.Δheight[(i as usize, j as usize)]) / max * 255.;
+                // let maxmap = self.Δheight[(i as usize, j as usize)] / max * 255.;
+                // println!(
+                //     "{} -> {}",
+                //     self.Δheight[(i as usize, j as usize)],
+                //     sigmoid(self.Δheight[(i as usize, j as usize)])
+                // );
+                Rgb([minmap.max(0.) as u8, 0, maxmap.max(0.) as u8])
+            },
+            "Δheight",
+        )
+    }
     pub fn stream_map_to_image(&self) -> () {
-        let mut render_map = self.stream_map.clone();
+        let render_map = self.stream_map.clone();
         let max = render_map.max().ln();
         // render_map /= render_map.max().ln();
         self.value_to_image(
@@ -198,7 +263,7 @@ impl Terrain {
         );
     }
     pub fn normal_to_image(&self) -> () {
-        let sunlight = Vec3::new(1., 0.5, 0.);
+        let sunlight = Vec3::new(-0.7, -0.7, 0.);
         self.value_to_image(
             |i, j| {
                 let normal = self.normal[(i as usize, j as usize)];
@@ -209,7 +274,7 @@ impl Terrain {
         )
     }
     pub fn pretty_to_image(&self) -> () {
-        let sunlight = Vec3::new(1., 0.5, 0.);
+        let sunlight = Vec3::new(1., 0., 0.); // angle that aligns with it, opposite of what you'd think
         let render_map = self.stream_map.clone();
         let max = render_map.max().ln();
 

@@ -1,5 +1,7 @@
 // #![deny(warnings)]
-#![allow(mixed_script_confusables)] // allows unicode characters
+#![allow(mixed_script_confusables)]
+use nalgebra::ComplexField;
+// allows unicode characters
 // use std::{thread, time::Duration};
 use stopwatch::Stopwatch;
 mod hydrological_erosion;
@@ -10,10 +12,10 @@ use crate::terrain::Terrain;
 fn main() {
     println!(">");
     let mut frame = Stopwatch::start_new();
-    let mut terrain: Terrain = Terrain::new(11, 4096, 4096, 0, 2.1, 0.4);
+    let mut terrain: Terrain = Terrain::new(11, 1024, 1024, 0, 2.1, 0.4);
 
     frame.stop();
-    println!("frame: {:?}", frame.elapsed());
+    println!("noise generation time: {:?}", frame.elapsed());
 
     erode(&mut terrain);
 }

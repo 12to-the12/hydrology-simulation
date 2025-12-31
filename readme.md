@@ -19,3 +19,6 @@ writing to an array is O(n) with a really low coefficient
 1400 ms to process 1_000_000 raindrops on 10 threads.
 700 ms to do the math, and another 700 to simply write to terrain.
 Can't figure out how to write as soon as the value is created.
+
+
+biggest issue is the normals aren't being recalulated for every step, so the direction the drop heads in is inaccurate
