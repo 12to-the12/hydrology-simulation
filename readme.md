@@ -7,6 +7,12 @@ see my worldsim note for details
 - rain
 - wind
 
+
+# erosion modelling
+mass transfer is proportional to speed of raindrops, volume, and Δheight
+if it erodes, modfy previous, if it deposits, modify current
+
+
 # modelling the multithreaded hydrological erosion:
 random location cannot be a terrain method, otherwise it'd mutate the state, the rng needs to come from somewhere else.
 
@@ -20,5 +26,8 @@ writing to an array is O(n) with a really low coefficient
 700 ms to do the math, and another 700 to simply write to terrain.
 Can't figure out how to write as soon as the value is created.
 
-
+# issues
 biggest issue is the normals aren't being recalulated for every step, so the direction the drop heads in is inaccurate
+
+
+![heighmap](heighmap.png)

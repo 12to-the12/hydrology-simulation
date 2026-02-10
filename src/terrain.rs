@@ -1,6 +1,7 @@
 extern crate nalgebra as na;
 use std::{
     f32::consts::E,
+    ops::MulAssign,
     path::Iter,
     rc::Rc,
     sync::{Arc, Mutex},
@@ -16,6 +17,7 @@ use rayon::prelude::*;
 type MatrixSlice<'a> =
     Matrix<f32, Dyn, Dyn, ViewStorage<'a, f32, Dyn, Dyn, nalgebra::Const<1>, Dyn>>;
 
+
 pub fn sigmoid(t: f32) -> f32 {
     t / (1. + t.abs())
 }
@@ -26,13 +28,13 @@ pub fn save_image(canvas: ImageBuffer<Rgb<u8>, Vec<u8>>, name: &str) -> () {
 }
 type Vec3 = SVector<f32, 3>;
 type Vec2 = SVector<f32, 2>;
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct Terrain {
-    pub height: DMatrix<f32>,
-    _surface_water: DMatrix<f32>,
-    pub normal: DMatrix<Vec3>,
-    pub stream_map: DMatrix<f32>,
-    pub Δheight: DMatrix<f32>,
+    pub height: FloatTiles,
+    _surface_water: FloatTiles,
+    pub normal: VecTiles,
+    pub stream_map: FloatTiles,
+    pub Δheight: FloatTiles,
     // _temperature: DMatrix<f32>, // Kelvin
     // _oxygen: DMatrix<f32>,
     // _fixed_nitrogen: DMatrix<f32>,

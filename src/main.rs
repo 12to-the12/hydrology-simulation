@@ -4,18 +4,20 @@ use nalgebra::ComplexField;
 // allows unicode characters
 // use std::{thread, time::Duration};
 use stopwatch::Stopwatch;
-mod hydrological_erosion;
-mod terrain;
+// mod hydrological_erosion;
+// mod terrain;
+mod tiles;
 
-use crate::hydrological_erosion::erode;
-use crate::terrain::Terrain;
+// use crate::hydrological_erosion::erode;
+// use crate::terrain::Terrain;
 fn main() {
     println!(">");
-    let mut frame = Stopwatch::start_new();
-    let mut terrain: Terrain = Terrain::new(11, 1024, 1024, 0, 2.1, 0.4);
 
-    frame.stop();
-    println!("noise generation time: {:?}", frame.elapsed());
+    // let mut frame = Stopwatch::start_new();
+    // let mut terrain: Terrain = Terrain::new(11, 1024, 1024, 0, 2.1, 0.4);
 
-    erode(&mut terrain);
+    // frame.stop();
+    // println!("noise generation time: {:?}", frame.elapsed());
+
+    // erode(&mut terrain);
 }

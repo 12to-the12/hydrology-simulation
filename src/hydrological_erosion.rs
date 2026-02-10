@@ -50,11 +50,14 @@ impl Particle {
             let height = terrain.height[particle.coor()];
             // Δheight is negative if it drops
             let Δheight = height - particle.starting_height;
-            // let intensity = 0.1; // 1 is fully equalized
+            let intensity = 1.; // 1 is fully equalized
 
             // full soak saturates?
             let mut carrying_capacity = particle.speed() * -Δheight * particle.volume;
             // println!("{}", -Δheight);
+
+
+            
             carrying_capacity = carrying_capacity.max(0.);
             let soaking_force = carrying_capacity - particle.sediment;
             if soaking_force > 0. {
