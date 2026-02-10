@@ -30,4 +30,4 @@ Can't figure out how to write as soon as the value is created.
 biggest issue is the normals aren't being recalulated for every step, so the direction the drop heads in is inaccurate
 
 
-![heighmap](heighmap.png)
+![heightmap](heightmap.png)
