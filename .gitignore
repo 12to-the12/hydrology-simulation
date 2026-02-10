@@ -52,7 +52,7 @@ docs/_build/
 
 animation/
 pictures/
-*.png
+# ./archive/**.png
 
 # Added by cargo
 
